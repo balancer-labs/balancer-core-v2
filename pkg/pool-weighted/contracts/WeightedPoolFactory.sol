@@ -50,6 +50,7 @@ contract WeightedPoolFactory is BasePoolFactory {
         IRateProvider[] memory rateProviders,
         uint256 swapFeePercentage,
         address owner,
+        bool isCustomFeeEnabled,
         bytes32 salt
     ) external returns (address) {
         (uint256 pauseWindowDuration, uint256 bufferPeriodDuration) = getPauseConfiguration();
@@ -64,7 +65,8 @@ contract WeightedPoolFactory is BasePoolFactory {
                         normalizedWeights: normalizedWeights,
                         rateProviders: rateProviders,
                         assetManagers: new address[](tokens.length), // Don't allow asset managers,
-                        swapFeePercentage: swapFeePercentage
+                        swapFeePercentage: swapFeePercentage,
+                        isCustomFeeEnabled: isCustomFeeEnabled
                     }),
                     getVault(),
                     getProtocolFeePercentagesProvider(),

@@ -59,6 +59,7 @@ describe('WeightedPoolFactory', function () {
         rateProviders,
         POOL_SWAP_FEE_PERCENTAGE,
         owner.address,
+        false,
         randomBytes(32)
       )
     ).wait();
@@ -104,7 +105,7 @@ describe('WeightedPoolFactory', function () {
     });
 
     it('sets swap fee', async () => {
-      expect(await pool.getSwapFeePercentage()).to.equal(POOL_SWAP_FEE_PERCENTAGE);
+      expect(await pool['getSwapFeePercentage()']()).to.equal(POOL_SWAP_FEE_PERCENTAGE);
     });
 
     it('sets the owner ', async () => {

@@ -133,7 +133,7 @@ describe('ComposableStablePoolFactory', function () {
     });
 
     it('sets swap fee', async () => {
-      expect(await pool.getSwapFeePercentage()).to.equal(POOL_SWAP_FEE_PERCENTAGE);
+      expect(await pool['getSwapFeePercentage()']()).to.equal(POOL_SWAP_FEE_PERCENTAGE);
     });
 
     it('sets the owner ', async () => {

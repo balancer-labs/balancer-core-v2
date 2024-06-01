@@ -17,12 +17,14 @@ pragma experimental ABIEncoderV2;
 
 import "./BaseWeightedPool.sol";
 import "./WeightedPoolProtocolFees.sol";
+import "./CustomFeeAuthorizer.sol";
 
 /**
  * @dev Basic Weighted Pool with immutable weights.
  */
-contract WeightedPool is BaseWeightedPool, WeightedPoolProtocolFees {
+contract WeightedPool is BaseWeightedPool, WeightedPoolProtocolFees, CustomFeeAuthorizer {
     using FixedPoint for uint256;
+    using WeightedPoolUserData for bytes;
 
     uint256 private constant _MAX_TOKENS = 8;
 
@@ -67,6 +69,7 @@ contract WeightedPool is BaseWeightedPool, WeightedPoolProtocolFees {
         IRateProvider[] rateProviders;
         address[] assetManagers;
         uint256 swapFeePercentage;
+        bool isCustomFeeEnabled;
     }
 
     constructor(
@@ -94,6 +97,7 @@ contract WeightedPool is BaseWeightedPool, WeightedPoolProtocolFees {
             ProviderFeeIDs({ swap: ProtocolFeeType.SWAP, yield: ProtocolFeeType.YIELD, aum: ProtocolFeeType.AUM })
         )
         WeightedPoolProtocolFees(params.tokens.length, params.rateProviders)
+        CustomFeeAuthorizer(params.isCustomFeeEnabled)
     {
         uint256 numTokens = params.tokens.length;
         InputHelpers.ensureInputLengthMatch(numTokens, params.normalizedWeights.length);
@@ -401,4 +405,55 @@ contract WeightedPool is BaseWeightedPool, WeightedPoolProtocolFees {
     {
         return super._isOwnerOnlyAction(actionId);
     }
+
+    function getSwapFeePercentage(bytes memory userData, OperationType operation)
+        public
+        view
+        virtual
+        override
+        returns (uint256 fee)
+    {
+        // using tx.origin insted of msg.sender as these functions are called
+        // during join/exit/swap via vault
+        // solhint-disable-next-line avoid-tx-origin
+        if (isCustomFeeEnabled() && canSetCustomFee(tx.origin)) {
+            if (operation == OperationType.JOIN) {
+                WeightedPoolUserData.JoinKind kind = userData.joinKind();
+                if (kind == WeightedPoolUserData.JoinKind.EXACT_TOKENS_IN_FOR_BPT_OUT) {
+                    fee = userData.exactTokensInForBptOutCustomFee();
+                } else {
+                    if (kind == WeightedPoolUserData.JoinKind.TOKEN_IN_FOR_EXACT_BPT_OUT) {
+                        fee = userData.tokenInForExactBptOutCustomFee();
+                    }
+                }
+            } else if (operation == OperationType.EXIT) {
+                WeightedPoolUserData.ExitKind kind = userData.exitKind();
+                if (kind == WeightedPoolUserData.ExitKind.EXACT_BPT_IN_FOR_ONE_TOKEN_OUT) {
+                    fee = userData.exactBptInForTokenOutCustomFee();
+                } else {
+                    if (kind == WeightedPoolUserData.ExitKind.BPT_IN_FOR_EXACT_TOKENS_OUT) {
+                        fee = userData.bptInForExactTokensOutCustomFee();
+                    }
+                }
+            } else if (operation == OperationType.SWAP) {
+                fee = userData.swapCustomFee();
+            } else {
+                _revert(Errors.INVALID_OPERATION_TYPE);
+            }
+        } else {
+            fee = getSwapFeePercentage();
+        }
+    }
+
+    function setSwapFeePercentage(uint256 swapFeePercentage) public virtual override whenNotPaused {
+        // here msg.sender is used, as this function can be called directly by the admin
+        // not via any other contract
+        if (isCustomFeeEnabled()) {
+            require(solver == msg.sender, "CALLER_IS_NOT_SOLVER");
+            _setSwapFeePercentage(swapFeePercentage);
+        } else {
+            super.setSwapFeePercentage(swapFeePercentage);
+        }
+    }
+    // used if else so that it should not break the existing flow
 }

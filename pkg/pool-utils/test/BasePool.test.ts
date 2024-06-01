@@ -154,7 +154,7 @@ describe('BasePool', function () {
         const swapFeePercentage = fp(0.003);
         const pool = await deployBasePool({ swapFeePercentage });
 
-        expect(await pool.getSwapFeePercentage()).to.equal(swapFeePercentage);
+        expect(await pool['getSwapFeePercentage()']()).to.equal(swapFeePercentage);
       });
     });
 
@@ -169,7 +169,7 @@ describe('BasePool', function () {
           it('can change the swap fee', async () => {
             await pool.connect(sender).setSwapFeePercentage(newSwapFeePercentage);
 
-            expect(await pool.getSwapFeePercentage()).to.equal(newSwapFeePercentage);
+            expect(await pool['getSwapFeePercentage()']()).to.equal(newSwapFeePercentage);
           });
 
           it('emits an event', async () => {
@@ -815,7 +815,7 @@ describe('BasePool', function () {
     });
 
     it('stores the swap fee pct in the most-significant 64 bits', async () => {
-      expect(await pool.getSwapFeePercentage()).to.equal(swapFeePercentage);
+      expect(await pool['getSwapFeePercentage()']()).to.equal(swapFeePercentage);
 
       const swapFeeHex = swapFeePercentage.toHexString().slice(2); // remove 0x
       const expectedMiscData = swapFeeHex.padStart(16, '0').padEnd(64, '0'); // pad first 8 bytes and fill with zeros

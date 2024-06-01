@@ -246,6 +246,8 @@ library Errors {
     uint256 internal constant SAFE_CAST_VALUE_CANT_FIT_UINT64 = 442;
     uint256 internal constant UNHANDLED_FEE_TYPE = 443;
     uint256 internal constant BURN_FROM_ZERO = 444;
+    uint256 internal constant INVALID_INPUT_ADDRESS = 445;
+    uint256 internal constant INVALID_OPERATION_TYPE = 446;
 
     // Vault
     uint256 internal constant INVALID_POOL_ID = 500;

@@ -18,7 +18,18 @@ export default {
     },
   },
   solidity: {
-    compilers: hardhatBaseConfig.compilers,
+    // compilers: hardhatBaseConfig.compilers,
+    compilers: [
+      {
+        version: '0.7.1',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 10,
+          },
+        },
+      },
+    ],
     overrides: { ...hardhatBaseConfig.overrides(name) },
   },
   warnings: hardhatBaseConfig.warnings,

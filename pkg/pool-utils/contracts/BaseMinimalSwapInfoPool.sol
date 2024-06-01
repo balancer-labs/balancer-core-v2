@@ -35,6 +35,8 @@ abstract contract BaseMinimalSwapInfoPool is IMinimalSwapInfoPool, BasePool {
         uint256 balanceTokenOut
     ) public override onlyVault(request.poolId) returns (uint256) {
         _beforeSwapJoinExit();
+        uint256 _fee = getSwapFeePercentage(request.userData, OperationType.SWAP);
+        emit SwapFeePercentageChanged(_fee);
 
         uint256 scalingFactorTokenIn = _scalingFactor(request.tokenIn);
         uint256 scalingFactorTokenOut = _scalingFactor(request.tokenOut);
@@ -44,7 +46,7 @@ abstract contract BaseMinimalSwapInfoPool is IMinimalSwapInfoPool, BasePool {
 
         if (request.kind == IVault.SwapKind.GIVEN_IN) {
             // Fees are subtracted before scaling, to reduce the complexity of the rounding direction analysis.
-            request.amount = _subtractSwapFeeAmount(request.amount);
+            request.amount = _subtractSwapFeeAmount(request.amount, _fee);
 
             // All token amounts are upscaled.
             request.amount = _upscale(request.amount, scalingFactorTokenIn);
@@ -63,7 +65,7 @@ abstract contract BaseMinimalSwapInfoPool is IMinimalSwapInfoPool, BasePool {
             amountIn = _downscaleUp(amountIn, scalingFactorTokenIn);
 
             // Fees are added after scaling happens, to reduce the complexity of the rounding direction analysis.
-            return _addSwapFeeAmount(amountIn);
+            return _addSwapFeeAmount(amountIn, _fee);
         }
     }
 

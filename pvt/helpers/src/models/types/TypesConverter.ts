@@ -69,6 +69,7 @@ export default {
       swapFeePercentage,
       pauseWindowDuration,
       bufferPeriodDuration,
+      isCustomFeeEnabled,
     } = params;
     if (!params.owner) params.owner = ZERO_ADDRESS;
     if (!tokens) tokens = new TokenList();
@@ -79,6 +80,7 @@ export default {
     if (!bufferPeriodDuration) bufferPeriodDuration = DEFAULT_BUFFER_PERIOD_DURATION;
     if (!rateProviders) rateProviders = Array(tokens.length).fill(ZERO_ADDRESS);
     if (!assetManagers) assetManagers = Array(tokens.length).fill(ZERO_ADDRESS);
+    if (isCustomFeeEnabled === undefined) isCustomFeeEnabled = false;
 
     return {
       tokens,
@@ -89,6 +91,7 @@ export default {
       pauseWindowDuration,
       bufferPeriodDuration,
       owner: this.toAddress(params.owner),
+      isCustomFeeEnabled,
       from: params.from,
     };
   },

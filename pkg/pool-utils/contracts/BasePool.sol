@@ -173,6 +173,12 @@ abstract contract BasePool is
         return _miscData.decodeUint(_SWAP_FEE_PERCENTAGE_OFFSET, _SWAP_FEE_PERCENTAGE_BIT_LENGTH);
     }
 
+    // overloaded method implementation
+    function getSwapFeePercentage(bytes memory, OperationType) public view virtual returns (uint256) {
+        // override the function as per the need in the derived classes
+        return getSwapFeePercentage();
+    }
+
     /**
      * @notice Return the ProtocolFeesCollector contract.
      * @dev This is immutable, and retrieved from the Vault on construction. (It is also immutable in the Vault.)
@@ -592,17 +598,17 @@ abstract contract BasePool is
     /**
      * @dev Adds swap fee amount to `amount`, returning a higher value.
      */
-    function _addSwapFeeAmount(uint256 amount) internal view returns (uint256) {
+    function _addSwapFeeAmount(uint256 amount, uint256 fee) internal pure returns (uint256) {
         // This returns amount + fee amount, so we round up (favoring a higher fee amount).
-        return amount.divUp(getSwapFeePercentage().complement());
+        return amount.divUp(fee.complement());
     }
 
     /**
      * @dev Subtracts swap fee amount from `amount`, returning a lower value.
      */
-    function _subtractSwapFeeAmount(uint256 amount) internal view returns (uint256) {
+    function _subtractSwapFeeAmount(uint256 amount, uint256 fee) internal pure returns (uint256) {
         // This returns amount - fee amount, so we round up (favoring a higher fee amount).
-        uint256 feeAmount = amount.mulUp(getSwapFeePercentage());
+        uint256 feeAmount = amount.mulUp(fee);
         return amount.sub(feeAmount);
     }
 

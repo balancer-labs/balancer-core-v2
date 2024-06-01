@@ -54,7 +54,7 @@ abstract contract BaseGeneralPool is IGeneralPool, BasePool {
         uint256[] memory scalingFactors
     ) internal virtual returns (uint256) {
         // Fees are subtracted before scaling, to reduce the complexity of the rounding direction analysis.
-        swapRequest.amount = _subtractSwapFeeAmount(swapRequest.amount);
+        swapRequest.amount = _subtractSwapFeeAmount(swapRequest.amount, getSwapFeePercentage());
 
         _upscaleArray(balances, scalingFactors);
         swapRequest.amount = _upscale(swapRequest.amount, scalingFactors[indexIn]);
@@ -81,7 +81,7 @@ abstract contract BaseGeneralPool is IGeneralPool, BasePool {
         amountIn = _downscaleUp(amountIn, scalingFactors[indexIn]);
 
         // Fees are added after scaling happens, to reduce the complexity of the rounding direction analysis.
-        return _addSwapFeeAmount(amountIn);
+        return _addSwapFeeAmount(amountIn, getSwapFeePercentage());
     }
 
     /*

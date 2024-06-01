@@ -84,7 +84,7 @@ export default class BasePool {
   }
 
   async getSwapFeePercentage(): Promise<BigNumber> {
-    return this.instance.getSwapFeePercentage();
+    return this.instance['getSwapFeePercentage()']();
   }
 
   async getScalingFactors(): Promise<BigNumber[]> {

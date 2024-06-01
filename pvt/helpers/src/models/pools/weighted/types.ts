@@ -29,6 +29,7 @@ export type RawWeightedPoolDeployment = {
   pauseWindowDuration?: BigNumberish;
   bufferPeriodDuration?: BigNumberish;
   owner?: Account;
+  isCustomFeeEnabled?: boolean;
   admin?: SignerWithAddress;
   from?: SignerWithAddress;
   vault?: Vault;
@@ -44,6 +45,7 @@ export type WeightedPoolDeployment = {
   pauseWindowDuration: BigNumberish;
   bufferPeriodDuration: BigNumberish;
   owner: Account;
+  isCustomFeeEnabled: boolean;
   admin?: SignerWithAddress;
   from?: SignerWithAddress;
 };
