@@ -245,6 +245,20 @@ contract TimelockAuthorizer is IAuthorizer, TimelockAuthorizerManagement {
         return scheduledExecutionId;
     }
 
+    function scheduleAdaptorAction(
+        address where,
+        bytes memory data,
+        address[] memory executors
+    ) external returns (uint256) {
+        return
+            _schedule(
+                where,
+                address(_authorizerAdaptorEntrypoint),
+                abi.encodeWithSelector(_authorizerAdaptorEntrypoint.performAction.selector, where, data),
+                executors
+            );
+    }
+
     /**
      * @inheritdoc ITimelockAuthorizer
      */
@@ -253,6 +267,15 @@ contract TimelockAuthorizer is IAuthorizer, TimelockAuthorizerManagement {
         bytes memory data,
         address[] memory executors
     ) external override returns (uint256) {
+        return _schedule(where, where, data, executors);
+    }
+
+    function _schedule(
+        address where,
+        address entrypoint,
+        bytes memory data,
+        address[] memory executors
+    ) internal returns (uint256) {
         // Allowing scheduling arbitrary calls into the TimelockAuthorizer is dangerous.
         //
         // It is expected that only the `root` account can initiate a root transfer as this condition is enforced
@@ -273,19 +296,20 @@ contract TimelockAuthorizer is IAuthorizer, TimelockAuthorizerManagement {
         // Note: The TimelockExecutionHelper only accepts calls from the TimelockAuthorizer (i.e. not from itself) so
         // this scenario should be impossible: but this check is cheap so we enforce it here as well anyway.
         require(where != getTimelockExecutionHelper(), "ATTEMPTING_EXECUTION_HELPER_REENTRANCY");
+        require(entrypoint == where || entrypoint == address(_authorizerAdaptorEntrypoint), "INVALID_ENTRYPOINT");
 
         // We require data to have a function selector
         require(data.length >= 4, "DATA_TOO_SHORT");
         // The bytes4 type is left-aligned and padded with zeros: we make use of that property to build the selector
         bytes4 selector = bytes4(data[0]) | (bytes4(data[1]) >> 8) | (bytes4(data[2]) >> 16) | (bytes4(data[3]) >> 24);
 
-        bytes32 actionId = IAuthentication(where).getActionId(selector);
+        bytes32 actionId = IAuthentication(entrypoint).getActionId(selector);
         require(hasPermission(actionId, msg.sender, where), "SENDER_DOES_NOT_HAVE_PERMISSION");
 
         uint256 delay = _delaysPerActionId[actionId];
         require(delay > 0, "DELAY_IS_NOT_SET");
 
-        uint256 scheduledExecutionId = _scheduleWithDelay(where, data, delay, executors);
+        uint256 scheduledExecutionId = _scheduleWithDelay(entrypoint, data, delay, executors);
 
         emit ExecutionScheduled(actionId, scheduledExecutionId);
 
