@@ -1041,9 +1041,19 @@ contract ComposableStablePool is
      * increasing rates, which ultimately depends on the nature of the tokens and their rate providers.
      *
      * WARNING: since this function reads balances directly from the Vault, it is potentially subject to manipulation
-     * via reentrancy. However, this can only happen if one of the tokens in the Pool contains some form of callback
-     * behavior in the `transferFrom` function (like ERC777 tokens do). These tokens are strictly incompatible with the
+     * via reentrancy if called within a Vault context (i.e. in the middle of a join or an exit). It is up to the
+     * caller to ensure that the function is safe to call.
+     *
+     * This may happen e.g. if one of the tokens in the Pool contains some form of callback behavior in the
+     * `transferFrom` function (like ERC777 tokens do). These tokens are strictly incompatible with the
      * Vault and Pool design, and are not safe to be used.
+     *
+     * There are also other situations where calling this function is unsafe. See
+     * https://forum.balancer.fi/t/reentrancy-vulnerability-scope-expanded/4345 for reference.
+     *
+     * To call this function safely, attempt to trigger the reentrancy guard in the Vault by calling a non-reentrant
+     * function before calling `getRate`. That will make the transaction revert in an unsafe context.
+     * (See `VaultReentrancyLib.ensureNotInVaultContext` in pool-utils.)
      */
     function getRate() external view virtual override returns (uint256) {
         // We need to compute the current invariant and actual total supply. The latter includes protocol fees that have
@@ -1090,6 +1100,18 @@ contract ComposableStablePool is
      *    effectively be included in any Pool operation that involves BPT.
      *
      * In the vast majority of cases, this function should be used instead of `totalSupply()`.
+     *
+     * **IMPORTANT NOTE**: calling this function within a Vault context (i.e. in the middle of a join or an exit) is
+     * potentially unsafe, since the returned value is manipulable. It is up to the caller to ensure safety.
+     *
+     * This is because this function calculates the invariant, which requires the state of the pool to be in sync
+     * with the state of the Vault. That condition may not be true in the middle of a join or an exit.
+     *
+     * To call this function safely, attempt to trigger the reentrancy guard in the Vault by calling a non-reentrant
+     * function before calling `getActualSupply`. That will make the transaction revert in an unsafe context.
+     * (See `VaultReentrancyLib.ensureNotInVaultContext` in pool-utils.)
+     *
+     * See https://forum.balancer.fi/t/reentrancy-vulnerability-scope-expanded/4345 for reference.
      */
     function getActualSupply() external view returns (uint256) {
         (, uint256 virtualSupply, uint256 protocolFeeAmount, , ) = _getSupplyAndFeesData();

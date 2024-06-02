@@ -21,6 +21,7 @@ import "@balancer-labs/v2-interfaces/contracts/pool-utils/IRateProvider.sol";
 import "@balancer-labs/v2-solidity-utils/contracts/helpers/ERC20Helpers.sol";
 import "@balancer-labs/v2-solidity-utils/contracts/helpers/InputHelpers.sol";
 import "@balancer-labs/v2-pool-utils/contracts/rates/PriceRateCache.sol";
+import "@balancer-labs/v2-pool-utils/contracts/lib/VaultReentrancyLib.sol";
 
 import "./ComposableStablePoolStorage.sol";
 
@@ -49,6 +50,19 @@ abstract contract ComposableStablePoolRates is IComposableStablePoolRates, Compo
 
     event TokenRateCacheUpdated(uint256 indexed tokenIndex, uint256 rate);
     event TokenRateProviderSet(uint256 indexed tokenIndex, IRateProvider indexed provider, uint256 cacheDuration);
+
+    /**
+     * @dev Ensure we are not in a Vault context when this function is called, by calling a library function that
+     * reverts in that case.
+     *
+     * Use this modifier with any function that can cause a state change in a pool and is either public itself,
+     * or called by a public function *outside* a Vault operation (e.g., join, exit, or swap).
+     * See https://forum.balancer.fi/t/reentrancy-vulnerability-scope-expanded/4345 for reference.
+     */
+    modifier whenNotInVaultContext() {
+        VaultReentrancyLib.ensureNotInVaultContext(_getVault());
+        _;
+    }
 
     constructor(RatesParams memory rateParams) {
         InputHelpers.ensureInputLengthMatch(
@@ -140,7 +154,12 @@ abstract contract ComposableStablePoolRates is IComposableStablePoolRates, Compo
     }
 
     /// @inheritdoc IComposableStablePoolRates
-    function setTokenRateCacheDuration(IERC20 token, uint256 duration) external override authenticate {
+    function setTokenRateCacheDuration(IERC20 token, uint256 duration)
+        external
+        override
+        whenNotInVaultContext
+        authenticate
+    {
         uint256 index = _getTokenIndex(token);
         IRateProvider provider = _getRateProvider(index);
         _require(address(provider) != address(0), Errors.TOKEN_DOES_NOT_HAVE_RATE_PROVIDER);
@@ -149,7 +168,7 @@ abstract contract ComposableStablePoolRates is IComposableStablePoolRates, Compo
     }
 
     /// @inheritdoc IComposableStablePoolRates
-    function updateTokenRateCache(IERC20 token) external override {
+    function updateTokenRateCache(IERC20 token) external override whenNotInVaultContext {
         uint256 index = _getTokenIndex(token);
 
         IRateProvider provider = _getRateProvider(index);
