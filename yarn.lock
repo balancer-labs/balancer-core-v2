@@ -251,6 +251,23 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@balancer-labs/v2-permissions@workspace:pkg/permissions":
+  version: 0.0.0-use.local
+  resolution: "@balancer-labs/v2-permissions@workspace:pkg/permissions"
+  dependencies:
+    "@types/node": "npm:^14.14.31"
+    "@typescript-eslint/eslint-plugin": "npm:^5.41.0"
+    "@typescript-eslint/parser": "npm:^5.41.0"
+    chalk: "npm:^4.1.2"
+    eslint: "npm:^8.26.0"
+    eslint-plugin-prettier: "npm:^4.2.1"
+    node-fetch: "npm:^2.6.7"
+    prettier: "npm:^2.7.1"
+    ts-node: "npm:^10.9.1"
+    typescript: "npm:^4.0.2"
+  languageName: unknown
+  linkType: soft
+
 "@balancer-labs/v2-pool-linear@workspace:pkg/pool-linear":
   version: 0.0.0-use.local
   resolution: "@balancer-labs/v2-pool-linear@workspace:pkg/pool-linear"

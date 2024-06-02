@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "moduleResolution": "node",
+    "declaration": true,
+    "outDir": "dist",
+    "resolveJsonModule": true
+  },
+  "include": ["src", "scripts"]
+}
