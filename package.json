@@ -27,7 +27,9 @@
   "scripts": {
     "build": "yarn workspaces foreach --parallel --verbose run build",
     "lint": "NODE_NO_WARNINGS=1 yarn workspaces foreach --parallel --verbose run lint",
-    "test": "yarn workspaces foreach --parallel --verbose run test"
+    "test": "yarn workspaces foreach --parallel --verbose run test",
+    "slither-install": "python3 -m venv slither && bash -c 'source slither/bin/activate && pip3 install slither-analyzer'",
+    "slither": "yarn workspaces foreach --parallel --verbose run slither"
   },
   "workspaces": [
     "pkg/*",

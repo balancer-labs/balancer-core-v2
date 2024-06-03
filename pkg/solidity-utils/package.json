@@ -17,15 +17,17 @@
     "!contracts/test/**/*.sol"
   ],
   "scripts": {
-    "build": "yarn compile",
-    "compile": "hardhat compile && rm -rf artifacts/build-info",
+    "build": "yarn compile && rm -rf artifacts/build-info",
+    "compile": "hardhat compile",
     "compile:watch": "nodemon --ext sol --exec yarn compile",
     "lint": "yarn lint:solidity && yarn lint:typescript",
     "lint:solidity": "solhint 'contracts/**/*.sol'",
     "lint:typescript": "NODE_NO_WARNINGS=1 eslint . --ext .ts --ignore-path ../../.eslintignore  --max-warnings 0",
     "test": "yarn compile && mocha --extension ts --require hardhat/register --require @balancer-labs/v2-common/setupTests --recursive",
     "test:watch": "nodemon --ext js,ts --watch test --watch lib --exec 'clear && yarn test --no-compile'",
-    "test-fuzz": "forge test"
+    "test-fuzz": "forge test",
+    "slither": "yarn compile && bash -c 'source ../../slither/bin/activate && slither --compile-force-framework hardhat --ignore-compile . --config-file ../../.slither.config.json'",
+    "slither:triage": "yarn compile && bash -c 'source ../../slither/bin/activate && slither --compile-force-framework hardhat --ignore-compile . --config-file ../../.slither.config.json --triage-mode'"
   },
   "dependencies": {
     "@balancer-labs/v2-interfaces": "workspace:*"
