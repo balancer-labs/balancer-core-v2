@@ -1,0 +1,3 @@
+corpusDir: linear-pool-corpus
+testLimit: 50000
+seqLen: 100
