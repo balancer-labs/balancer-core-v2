@@ -38,6 +38,8 @@ interface IProtocolFeeSplitter {
     event PoolRevenueShareCleared(bytes32 indexed poolId);
     event PoolBeneficiaryChanged(bytes32 indexed poolId, address newBeneficiary);
     event DefaultRevenueSharePercentageChanged(uint256 revenueSharePercentage);
+    event FactoryDefaultRevenueSharePercentageChanged(address indexed factory, uint256 revenueSharePercentage);
+    event FactoryDefaultRevenueSharePercentageCleared(address indexed factory);
     event DAOFundsRecipientChanged(address newDaoFundsRecipient);
 
     // Fund recipients
@@ -95,10 +97,28 @@ interface IProtocolFeeSplitter {
     function setDefaultRevenueSharePercentage(uint256 defaultRevenueSharePercentage) external;
 
     /**
-     * @notice Allows an authorized user to change the revenueShare for a given pool.
-     * @dev This is a permissioned function.
-     * @param poolId - the poolId of the pool where the revenue share will change.
-     * @param revenueSharePercentage - the new revenue share percentage.
+     * @notice Returns the revenue share associated with the given factory
+     * @dev Reverts if no revenue share was set for this factory
+     * @param factory - the address of the factory with a default revenue share percentage
+     */
+    function getFactoryDefaultRevenueSharePercentage(address factory) external view returns (uint256);
+
+    /**
+     * @notice Allows a authorized user to change the default revenue sharing fee percentage for a given factory
+     * @param factory - address of the factory
+     * @param feePercentage - new default revenue sharing fee percentage
+     */
+    function setFactoryDefaultRevenueSharePercentage(address factory, uint256 feePercentage) external;
+
+    /**
+     * @notice Allows a authorized user to remove a default revenue sharing fee override for a given factory
+     * @param factory - address of the factory
+     */
+    function clearFactoryDefaultRevenueSharePercentage(address factory) external;
+
+    /**
+     * @notice Ignore any previously set revenue sharing percentage, and begin using the default.
+     * @param poolId - the poolId of the pool to begin using the default revenue share percentage.
      */
     function setRevenueSharePercentage(bytes32 poolId, uint256 revenueSharePercentage) external;
 

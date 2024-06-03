@@ -17,12 +17,17 @@ pragma solidity >=0.7.0 <0.9.0;
 import "@balancer-labs/v2-interfaces/contracts/standalone-utils/IProtocolFeeSplitter.sol";
 import "@balancer-labs/v2-interfaces/contracts/standalone-utils/IProtocolFeesWithdrawer.sol";
 import "@balancer-labs/v2-interfaces/contracts/vault/IVault.sol";
+
 import "@balancer-labs/v2-solidity-utils/contracts/helpers/SingletonAuthentication.sol";
+import "@balancer-labs/v2-solidity-utils/contracts/openzeppelin/EnumerableMap.sol";
 import "@balancer-labs/v2-solidity-utils/contracts/math/FixedPoint.sol";
-import "@balancer-labs/v2-interfaces/contracts/vault/IProtocolFeesCollector.sol";
 
 interface Pool {
     function getOwner() external view returns (address);
+}
+
+interface Factory {
+    function isPoolFromFactory(address pool) external view returns (bool);
 }
 
 /**
@@ -36,7 +41,10 @@ interface Pool {
  * token were on this denyList.
  */
 contract ProtocolFeeSplitter is IProtocolFeeSplitter, SingletonAuthentication {
+    using EnumerableMap for EnumerableMap.IERC20ToUint256Map;
     using FixedPoint for uint256;
+
+    string private constant _UNDEFINED_FACTORY_SHARE = "Share undefined for this factory";
 
     // All fee percentages are 18-decimal fixed point numbers.
     // Absolute maximum fee percentage (1e18 = 100%).
@@ -49,6 +57,11 @@ contract ProtocolFeeSplitter is IProtocolFeeSplitter, SingletonAuthentication {
 
     // The default revenue share given to pools; can be updated by governance (1e18 = 100%, 1e16 = 1%).
     uint256 private _defaultRevenueSharePercentage;
+
+    // Allow the default revenue sharing fee percentage to be overridden for individual factories.
+    EnumerableMap.IERC20ToUint256Map private _revenueShareFactoryOverrides;
+
+    // By default, the `overrideSet` flag is false, and all Pools use the default revenue share percentage.
 
     // Packed to use 1 storage slot
     // 1e18 (100% - maximum fee value) can fit in uint88
@@ -73,6 +86,23 @@ contract ProtocolFeeSplitter is IProtocolFeeSplitter, SingletonAuthentication {
     /// @inheritdoc IProtocolFeeSplitter
     function getDaoFundsRecipient() external view override returns (address) {
         return _daoFundsRecipient;
+    }
+
+    function setFactoryDefaultRevenueSharePercentage(address factory, uint256 feePercentage)
+        external
+        override
+        authenticate
+    {
+        _require(feePercentage <= _MAX_REVENUE_SHARE_PERCENTAGE, Errors.SPLITTER_FEE_PERCENTAGE_TOO_HIGH);
+        _revenueShareFactoryOverrides.set(IERC20(factory), feePercentage);
+
+        emit FactoryDefaultRevenueSharePercentageChanged(factory, feePercentage);
+    }
+
+    function clearFactoryDefaultRevenueSharePercentage(address factory) external override authenticate {
+        require(_revenueShareFactoryOverrides.remove(IERC20(factory)), _UNDEFINED_FACTORY_SHARE);
+
+        emit FactoryDefaultRevenueSharePercentageCleared(factory);
     }
 
     /// @inheritdoc IProtocolFeeSplitter
@@ -182,6 +212,13 @@ contract ProtocolFeeSplitter is IProtocolFeeSplitter, SingletonAuthentication {
 
     // Internal functions
 
+    function getFactoryDefaultRevenueSharePercentage(address factory) external view override returns (uint256) {
+        require(_revenueShareFactoryOverrides.contains(IERC20(factory)), _UNDEFINED_FACTORY_SHARE);
+
+        // We have checked about that the key exists, so `get` should not revert.
+        return _revenueShareFactoryOverrides.get(IERC20(factory), Errors.SHOULD_NOT_HAPPEN);
+    }
+
     function _withdrawBpt(
         IERC20 bpt,
         uint256 amount,
@@ -231,6 +268,24 @@ contract ProtocolFeeSplitter is IProtocolFeeSplitter, SingletonAuthentication {
     function _getPoolBeneficiaryFeePercentage(bytes32 poolId) private view returns (uint256) {
         RevenueShareSettings memory settings = _poolSettings[poolId];
 
-        return settings.overrideSet ? settings.revenueSharePercentageOverride : _defaultRevenueSharePercentage;
+        if (settings.overrideSet) {
+            // If there is an override for this specific pool, use it.
+            return settings.revenueSharePercentageOverride;
+        }
+
+        // Is this pool from a factory with an overridden default? If so, use it.
+        (address poolAddress, ) = getVault().getPool(poolId);
+
+        for (uint256 i = 0; i < _revenueShareFactoryOverrides.length(); i++) {
+            (IERC20 factoryAddress, uint256 factoryDefaultRevenueSharePercentage) = _revenueShareFactoryOverrides
+                .unchecked_at(i);
+
+            if (Factory(address(factoryAddress)).isPoolFromFactory(poolAddress)) {
+                return factoryDefaultRevenueSharePercentage;
+            }
+        }
+
+        // If there is no override set, and no factory override, fall back to the overall default.
+        return _defaultRevenueSharePercentage;
     }
 }
