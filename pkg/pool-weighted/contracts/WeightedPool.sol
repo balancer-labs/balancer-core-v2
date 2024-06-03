@@ -330,8 +330,20 @@ contract WeightedPool is BaseWeightedPool, WeightedPoolProtocolFees {
      * even if they don't yet exist, they will effectively be included in any Pool operation that involves BPT.
      *
      * In the vast majority of cases, this function should be used instead of `totalSupply()`.
+     *
+     * **IMPORTANT NOTE**: calling this function within a Vault context (i.e. in the middle of a join or an exit) is
+     * potentially unsafe, since the returned value is manipulable. It is up to the caller to ensure safety.
+     *
+     * This is because this function calculates the invariant, which requires the state of the pool to be in sync
+     * with the state of the Vault. That condition may not be true in the middle of a join or an exit.
+     *
+     * To call this function safely, attempt to trigger the reentrancy guard in the Vault by calling a non-reentrant
+     * function before calling `getActualSupply`. That will make the transaction revert in an unsafe context.
+     * (See `VaultReentrancyLib.ensureNotInVaultContext` in pool-utils.)
+     *
+     * See https://forum.balancer.fi/t/reentrancy-vulnerability-scope-expanded/4345 for reference.
      */
-    function getActualSupply() public view returns (uint256) {
+    function getActualSupply() external view returns (uint256) {
         uint256 supply = totalSupply();
 
         (uint256 protocolFeesToBeMinted, ) = _getPreJoinExitProtocolFees(

@@ -84,6 +84,17 @@ abstract contract BaseWeightedPool is BaseMinimalSwapInfoPool {
 
     /**
      * @dev Returns the current value of the invariant.
+     * **IMPORTANT NOTE**: calling this function within a Vault context (i.e. in the middle of a join or an exit) is
+     * potentially unsafe, since the returned value is manipulable. It is up to the caller to ensure safety.
+     *
+     * Calculating the invariant requires the state of the pool to be in sync with the state of the Vault.
+     * That condition may not be true in the middle of a join or an exit.
+     *
+     * To call this function safely, attempt to trigger the reentrancy guard in the Vault by calling a non-reentrant
+     * function before calling `getInvariant`. That will make the transaction revert in an unsafe context.
+     * (See `VaultReentrancyLib.ensureNotInVaultContext` in pool-utils.)
+     *
+     * See https://forum.balancer.fi/t/reentrancy-vulnerability-scope-expanded/4345 for reference.
      */
     function getInvariant() public view returns (uint256) {
         (, uint256[] memory balances, ) = getVault().getPoolTokens(getPoolId());

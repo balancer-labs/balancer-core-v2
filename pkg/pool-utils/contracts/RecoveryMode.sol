@@ -22,6 +22,7 @@ import "@balancer-labs/v2-interfaces/contracts/vault/IVault.sol";
 import "@balancer-labs/v2-solidity-utils/contracts/math/FixedPoint.sol";
 
 import "./BasePoolAuthorization.sol";
+import "./lib/VaultReentrancyLib.sol";
 
 /**
  * @notice Handle storage and state changes for pools that support "Recovery Mode".
@@ -85,12 +86,23 @@ abstract contract RecoveryMode is IRecoveryMode, BasePoolAuthorization {
      * @notice Disable recovery mode, which disables the special safe exit path for LPs.
      * @dev Protocol fees are not paid while in Recovery Mode, so it should only remain active for as long as strictly
      * necessary.
+     *
+     * This function will revert when called within a Vault context (i.e. in the middle of a join or an exit).
+     *
+     * Disabling recovery mode in derived contracts often triggers code that depends on the invariant or total supply,
+     * which may be calculated incorrectly in the middle of a join or an exit, because the state of the pool could be
+     * out of sync with the state of the Vault. The call to `ensureNotInVaultContext` in `VaultReentrancyLib` ensures
+     * this is safe to call.
+     *
+     * See https://forum.balancer.fi/t/reentrancy-vulnerability-scope-expanded/4345 for reference.
      */
     function disableRecoveryMode() external override authenticate {
         // Some derived contracts respond to disabling recovery mode with state changes (e.g., related to protocol fees,
         // or otherwise ensuring that enabling and disabling recovery mode has no ill effects on LPs). When called
         // outside of recovery mode, these state changes might lead to unexpected behavior.
         _ensureInRecoveryMode();
+
+        VaultReentrancyLib.ensureNotInVaultContext(_getVault());
 
         _setRecoveryMode(false);
 
