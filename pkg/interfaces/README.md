@@ -22,7 +22,7 @@ The following are a couple code samples to help get you started. To get the addr
 
 Sample contract that joins a Balancer Pool:
 
-````solidity
+```solidity
 pragma solidity ^0.7.0;
 
 // Import Vault interface, error messages, and library for decoding join/exit data.
@@ -91,7 +91,7 @@ contract SimpleDepositor {
       vault.manageUserBalance(ops);
     }
 }
-````
+```
 
 Sample contract that performs Flash Loans:
 
@@ -134,6 +134,3 @@ One of the most commonly included libraries is [BalancerErrors](contracts/solidi
 
 [GNU General Public License Version 3 (GPL v3)](../../LICENSE).
 
-```
-
-```
